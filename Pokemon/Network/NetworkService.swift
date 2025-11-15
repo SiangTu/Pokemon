@@ -8,7 +8,7 @@
 import Moya
 import PromiseKit
 
-class NetworkService {
+struct NetworkService {
     
     static func getPokemonList(limit: Int, offset: Int) -> Promise<PokemonListResponse> {
         let getPokemonList = GetPokemonList.init(limit: limit, offset: offset)
