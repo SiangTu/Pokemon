@@ -6,11 +6,12 @@
 //
 
 import Moya
+import UIKit
 import PromiseKit
 
 struct NetworkService {
     
-    static func getPokemonList(limit: Int, offset: Int) -> Promise<PokemonListResponse> {
+    static func getPokemonList(limit: Int, offset: Int?) -> Promise<PokemonListResponse> {
         let getPokemonList = GetPokemonList.init(limit: limit, offset: offset)
         let provider = MoyaProvider<GetPokemonList>()
         return provider.request(getPokemonList, responseType: PokemonListResponse.self)
@@ -38,5 +39,24 @@ struct NetworkService {
         let getRegionDetail = GetRegionDetail.init(id: id)
         let provider = MoyaProvider<GetRegionDetail>()
         return provider.request(getRegionDetail, responseType: RegionDetailResponse.self)
+    }
+    
+    // 從 URL 加載圖片（使用 URLSession）
+    static func loadImage(from url: URL) -> Promise<Data> {
+        return Promise { seal in
+            URLSession.shared.dataTask(with: url) { data, response, error in
+                if let error = error {
+                    seal.reject(error)
+                    return
+                }
+                
+                guard let data = data else {
+                    seal.reject(NSError(domain: "ImageLoadingError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to load image"]))
+                    return
+                }
+                
+                seal.fulfill(data)
+            }.resume()
+        }
     }
 }

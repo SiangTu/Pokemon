@@ -68,7 +68,7 @@ extension GetRegionList: TargetType {
 struct RegionDetailResponse: Codable {
     let id: Int
     let locations: [LocationResource]
-    let mainGeneration: NamedAPIResource
+    let mainGeneration: NamedAPIResource?
     let name: String
     let names: [RegionName]
     let pokedexes: [NamedAPIResource]

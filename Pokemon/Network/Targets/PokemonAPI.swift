@@ -22,7 +22,7 @@ struct PokemonListResponse: Codable {
 
 struct GetPokemonList {
     let limit: Int
-    let offset: Int
+    let offset: Int?
 }
 
 extension GetPokemonList: TargetType {
@@ -40,10 +40,11 @@ extension GetPokemonList: TargetType {
     }
     
     var task: Moya.Task {
-        return .requestParameters(parameters: [
-            "limit": limit,
-            "offset": offset
-        ], encoding: URLEncoding.default)
+        var parameters: [String: Any] = ["limit": limit]
+        if let offset = offset {
+            parameters["offset"] = offset
+        }
+        return .requestParameters(parameters: parameters, encoding: URLEncoding.default)
     }
     
     var headers: [String : String]? {

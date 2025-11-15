@@ -8,6 +8,7 @@
 import Moya
 import PromiseKit
 import Foundation
+import UIKit
 
 extension MoyaProvider {
     func request<D: Decodable>(_ target: Target,
@@ -57,6 +58,35 @@ extension MoyaProvider {
                     } catch {
                         resolver.reject(error)
                     }
+                case .failure(let error):
+                    resolver.reject(error)
+                }
+            }
+        }
+    }
+    
+    // 使用 Moya 載入圖片
+    func requestImage(_ target: Target,
+                      callbackQueue: DispatchQueue? = .none,
+                      progress: ProgressBlock? = .none) -> Promise<UIImage> {
+        return Promise<UIImage>.init { [weak self] resolver in
+            guard let self else {
+                resolver.reject(CommonError.instanceDeallocated)
+                return
+            }
+            self.request(
+                target,
+                callbackQueue: callbackQueue,
+                progress: progress
+            ) { result in
+                switch result {
+                case .success(let moyaResponse):
+                    guard let image = UIImage(data: moyaResponse.data) else {
+                        let error = NSError(domain: "ImageLoadingError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to load image"])
+                        resolver.reject(error)
+                        return
+                    }
+                    resolver.fulfill(image)
                 case .failure(let error):
                     resolver.reject(error)
                 }

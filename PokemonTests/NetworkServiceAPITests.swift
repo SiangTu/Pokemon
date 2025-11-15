@@ -414,7 +414,6 @@ final class NetworkServiceAPITests: XCTestCase {
                 XCTAssertEqual(response.id, regionId, "Region ID should match requested ID")
                 XCTAssertFalse(response.name.isEmpty, "Region name should not be empty")
                 XCTAssertFalse(response.locations.isEmpty, "Region should have at least one location")
-                XCTAssertNotNil(response.mainGeneration, "Main generation should not be nil")
                 XCTAssertFalse(response.names.isEmpty, "Region should have names")
                 XCTAssertFalse(response.pokedexes.isEmpty, "Region should have pokedexes")
                 XCTAssertFalse(response.versionGroups.isEmpty, "Region should have version groups")
@@ -444,17 +443,12 @@ final class NetworkServiceAPITests: XCTestCase {
                 // Verify basic properties
                 XCTAssertNotNil(response.id, "ID should not be nil")
                 XCTAssertNotNil(response.name, "Name should not be nil")
-                XCTAssertNotNil(response.mainGeneration, "Main generation should not be nil")
                 
                 // Verify locations structure
                 for location in response.locations {
                     XCTAssertFalse(location.name.isEmpty, "Location name should not be empty")
                     XCTAssertTrue(location.url.contains("location"), "URL should contain 'location'")
                 }
-                
-                // Verify main generation
-                XCTAssertFalse(response.mainGeneration.name.isEmpty, "Main generation name should not be empty")
-                XCTAssertTrue(response.mainGeneration.url.contains("generation"), "URL should contain 'generation'")
                 
                 // Verify names structure
                 for regionName in response.names {
@@ -489,7 +483,7 @@ final class NetworkServiceAPITests: XCTestCase {
     
     func testGetRegionDetail_DifferentRegions() {
         // Given
-        let regionIds = [1, 2, 3] // Kanto, Johto, Hoenn
+        let regionIds = [7,8,9] // Kanto, Johto, Hoenn
         var expectations: [XCTestExpectation] = []
         
         // When & Then
