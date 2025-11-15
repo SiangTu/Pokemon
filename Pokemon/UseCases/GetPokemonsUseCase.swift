@@ -68,7 +68,6 @@ struct GetPokemonsUseCase {
             name: detailResponse.name,
             types: pokemonTypes,
             image: imagePromise,
-            isCollected: false,
             weight: detailResponse.weight,
             height: detailResponse.height,
             hp: hp,

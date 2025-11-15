@@ -19,7 +19,7 @@ class PokemonCardView: UIView {
         view.spacing = 8
         view.addArrangedSubview(imageView)
         view.addArrangedSubview(informationView)
-        view.addArrangedSubview(pokeballImageView)
+        view.addArrangedSubview(pokeballButton)
         return view
     }()
     private lazy var imageView: UIImageView = {
@@ -79,15 +79,16 @@ class PokemonCardView: UIView {
         return view
     }()
     
-    private lazy var pokeballImageView: UIImageView = {
-        let view = UIImageView()
-        view.image = UIImage(systemName: "circle.fill")
-        view.tintColor = .lightGray
-        view.snp.makeConstraints { make in
+    private lazy var pokeballButton: UIButton = {
+        let button = UIButton(type: .custom)
+        button.snp.makeConstraints { make in
             make.width.height.equalTo(30)
         }
-        return view
+        button.addTarget(self, action: #selector(pokeballButtonTapped), for: .touchUpInside)
+        return button
     }()
+    
+    private weak var currentPokemon: Pokemon?
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -116,9 +117,13 @@ class PokemonCardView: UIView {
     }
     
     func configure(with pokemon: Pokemon) {
+        self.currentPokemon = pokemon
         numberLabel.text = "#\(pokemon.number)"
         nameLabel.text = pokemon.name.uppercased()
         setupTypes(types: pokemon.types)
+        
+        // 更新收藏狀態
+        updateCollectionStatus(isCollected: pokemon.isCollected)
         
         // Load image from Promise
         pokemon.image
@@ -129,6 +134,17 @@ class PokemonCardView: UIView {
             .catch { error in
                 print("Failed to load image: \(error.localizedDescription)")
             }
+    }
+    
+    @objc private func pokeballButtonTapped() {
+        guard let pokemon = currentPokemon else { return }
+        pokemon.isCollected = !pokemon.isCollected
+        updateCollectionStatus(isCollected: pokemon.isCollected)
+    }
+    
+    private func updateCollectionStatus(isCollected: Bool) {
+        let imageName = isCollected ? "redBall" : "grayBall"
+        pokeballButton.setImage(UIImage(named: imageName), for: .normal)
     }
     
     private func setupTypes(types: [PokemonType]) {

@@ -71,6 +71,11 @@ class ViewController: UIViewController {
         loadData()
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        self.featuredCollectionView.reloadData()
+    }
+    
     private func setupUI() {
         view.backgroundColor = #colorLiteral(red: 0.9490135312, green: 0.9490135312, blue: 0.9694761634, alpha: 1)
         

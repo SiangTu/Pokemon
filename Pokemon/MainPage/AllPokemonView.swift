@@ -12,7 +12,7 @@ struct AllPokemonView: View {
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        PokemonNavigationView {
+        NavigationView {
             ZStack {
                 Color(red: 0.949, green: 0.949, blue: 0.969)
                     .ignoresSafeArea()
@@ -56,7 +56,33 @@ struct AllPokemonView: View {
                     viewModel.refresh()
                 }
             }
-            .pokemonNavigationTitle("All Pokémon", color: .black)
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarBackButtonHidden(true)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("All Pokemon")
+                        .foregroundColor(Color.black)
+                        .font(.headline)
+                }
+                
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.white.opacity(0.5))
+                                .frame(width: 36, height: 36)
+                            
+                            Image(systemName: "chevron.left")
+                                .foregroundColor(.black)
+                                .font(.system(size: 14, weight: .semibold))
+                        }
+                    }
+                }
+            }
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
             .onAppear {
                 if viewModel.pokemons.isEmpty {
                     viewModel.loadMorePokemons()
@@ -74,7 +100,6 @@ struct AllPokemonView: View {
                     Text(error)
                 }
             }
-            
         }
     }
 }
@@ -83,6 +108,12 @@ struct PokemonRowView: View {
     let pokemon: Pokemon
     @State private var imageData: Data?
     @State private var isLoadingImage = true
+    @State private var isCollected: Bool
+    
+    init(pokemon: Pokemon) {
+        self.pokemon = pokemon
+        _isCollected = State(initialValue: pokemon.isCollected)
+    }
     
     var body: some View {
         HStack(spacing: 12) {
@@ -132,10 +163,16 @@ struct PokemonRowView: View {
             
             Spacer()
             
-            // Pokeball Icon
-            Image(systemName: pokemon.isCollected ? "checkmark.circle.fill" : "circle.fill")
-                .foregroundColor(pokemon.isCollected ? .red : .gray)
-                .font(.system(size: 24))
+            // Pokeball Button
+            Button(action: {
+                isCollected.toggle()
+                pokemon.isCollected = isCollected
+            }) {
+                Image(isCollected ? "redBall" : "grayBall")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 30, height: 30)
+            }
         }
         .padding(12)
         .background(Color.white)
@@ -143,6 +180,7 @@ struct PokemonRowView: View {
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
         .onAppear {
             loadImage()
+            isCollected = pokemon.isCollected
         }
     }
     

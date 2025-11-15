@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+
+
 // Environment Key for title and titleColor
 struct PokemonNavigationTitleKey: EnvironmentKey {
     static let defaultValue: (title: String, color: Color) = ("", .black)
@@ -48,7 +50,7 @@ struct PokemonNavigationView<Content: View>: View {
                         }) {
                             ZStack {
                                 Circle()
-                                    .fill(Color.white.opacity(0.3))
+                                    .fill(Color.white.opacity(0.5))
                                     .frame(width: 36, height: 36)
                                 
                                 Image(systemName: "chevron.left")
@@ -65,7 +67,7 @@ struct PokemonNavigationView<Content: View>: View {
 
 }
 
-// TODO: 這邊原理要了解一下 extension View不好
+// TODO: 這邊原理要了解一下 extension View不太好
 // Modifier to set title and color
 extension View {
     func pokemonNavigationTitle(_ title: String, color: Color = .black) -> some View {

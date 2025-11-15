@@ -14,6 +14,12 @@ struct PokemonDetailView: View {
     @State private var scrollOffset: CGFloat = 0
     @State private var imageData: Data?
     @State private var isLoadingImage = true
+    @State private var isCollected: Bool
+    
+    init(pokemon: Pokemon) {
+        self.pokemon = pokemon
+        _isCollected = State(initialValue: pokemon.isCollected)
+    }
     
     // 計算漸變顏色（根據 PokemonType 混合）
     private var gradientColors: [Color] {
@@ -41,7 +47,7 @@ struct PokemonDetailView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            PokemonNavigationView {
+            NavigationView {
                 ZStack {
                     // 背景漸變（可縮放）
                     VStack {
@@ -77,7 +83,7 @@ struct PokemonDetailView: View {
                                             )
                                     }
                                 }
-                                .frame(height: 200)
+                                .frame(height: 250)
                                 .padding(.horizontal, 40)
                                 
                                 // Pokemon 名稱
@@ -150,11 +156,56 @@ struct PokemonDetailView: View {
                         scrollOffset = -value
                     }
                 }
-            }
-            .pokemonNavigationTitle(String(format: "#%03d", pokemon.number), color: .white)
-            .navigationBarHidden(true)
-            .onAppear {
-                loadImage()
+                .navigationTitle(String(format: "#%03d", pokemon.number))
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationBarBackButtonHidden(true)
+                .toolbar {
+                    ToolbarItem(placement: .principal) {
+                        Text(String(format: "#%03d", pokemon.number))
+                            .foregroundColor(.white)
+                            .font(.headline)
+                    }
+                    
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button(action: {
+                            dismiss()
+                        }) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.white.opacity(0.5))
+                                    .frame(width: 36, height: 36)
+                                
+                                Image(systemName: "chevron.left")
+                                    .foregroundColor(.black)
+                                    .font(.system(size: 14, weight: .semibold))
+                            }
+                        }
+                    }
+                    
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(action: {
+                            isCollected.toggle()
+                            pokemon.isCollected = isCollected
+                        }) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.white.opacity(0.5))
+                                    .frame(width: 36, height: 36)
+                                
+                                Image(isCollected ? "redBall" : "grayBall")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 24, height: 24)
+                            }
+                        }
+                    }
+                }
+                .toolbarBackground(.clear, for: .navigationBar)
+                .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
+                .onAppear {
+                    loadImage()
+                    isCollected = pokemon.isCollected
+                }
             }
         }
     }
@@ -253,7 +304,6 @@ struct RoundedCorner: Shape {
         name: "venusaur",
         types: [.grass, .poison],
         image: Promise.value(Data()),
-        isCollected: false,
         weight: 1000,
         height: 20,
         hp: 80,
