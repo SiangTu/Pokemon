@@ -7,6 +7,7 @@
 
 import UIKit
 import SnapKit
+import SwiftUI
 
 class ViewController: UIViewController {
     
@@ -144,6 +145,9 @@ class ViewController: UIViewController {
         featuredSeeMoreLabel.text = "See more"
         featuredSeeMoreLabel.font = .systemFont(ofSize: 16)
         featuredSeeMoreLabel.textColor = .systemBlue
+        featuredSeeMoreLabel.isUserInteractionEnabled = true
+        let seeMoreTapGesture = UITapGestureRecognizer(target: self, action: #selector(seeMoreTapped))
+        featuredSeeMoreLabel.addGestureRecognizer(seeMoreTapGesture)
         featuredSectionView.addSubview(featuredSeeMoreLabel)
         
         featuredSeeMoreLabel.snp.makeConstraints { make in
@@ -328,6 +332,13 @@ class ViewController: UIViewController {
         }
         
         return card
+    }
+    
+    @objc private func seeMoreTapped() {
+        let allPokemonView = AllPokemonView()
+            .navigationBarHidden(true)
+        let hostingController = UIHostingController(rootView: allPokemonView)
+        navigationController?.pushViewController(hostingController, animated: true)
     }
 }
 
