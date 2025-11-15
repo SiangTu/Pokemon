@@ -9,6 +9,8 @@ import UIKit
 import SnapKit
 
 class PokemonCardView: UIView {
+    var onTap: (() -> Void)?
+    
     private lazy var containerView: UIStackView = {
         let view = UIStackView()
         view.axis = .horizontal
@@ -102,6 +104,15 @@ class PokemonCardView: UIView {
         containerView.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
+        
+        // 添加點擊手勢
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap))
+        self.addGestureRecognizer(tapGesture)
+        self.isUserInteractionEnabled = true
+    }
+    
+    @objc private func handleTap() {
+        onTap?()
     }
     
     func configure(with pokemon: Pokemon) {

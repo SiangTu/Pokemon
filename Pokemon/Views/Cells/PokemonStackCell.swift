@@ -9,6 +9,7 @@ import UIKit
 import SnapKit
 
 class PokemonStackCell: UICollectionViewCell {
+    var onPokemonTap: ((Pokemon) -> Void)?
 
     private lazy var stackView: UIStackView = {
        let view = UIStackView()
@@ -44,6 +45,9 @@ class PokemonStackCell: UICollectionViewCell {
         for pokemon in pokemons.prefix(3) {
             let cardView = PokemonCardView()
             cardView.configure(with: pokemon)
+            cardView.onTap = { [weak self] in
+                self?.onPokemonTap?(pokemon)
+            }
             stackView.addArrangedSubview(cardView)
             // Set fixed height for each card
             cardView.snp.makeConstraints { make in

@@ -101,6 +101,13 @@ struct PokemonDetailResponse: Codable {
             let officialArtwork: OfficialArtworkSprites?
             let showdown: ShowdownSprites?
             
+            enum CodingKeys: String, CodingKey {
+                case dreamWorld
+                case home
+                case officialArtwork  = "official-artwork"
+                case showdown
+            }
+            
             struct DreamWorldSprites: Codable {
                 let frontDefault: String?
                 let frontFemale: String?

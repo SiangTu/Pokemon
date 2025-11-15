@@ -53,8 +53,7 @@ struct GetPokemonsUseCase {
         let speed = getStatValue(from: detailResponse.stats, statName: "speed") ?? 0
         
         // 取得圖片 URL 並創建 Promise
-        let imageURL = detailResponse.sprites.other?.officialArtwork?.frontDefault
-            ?? detailResponse.sprites.frontDefault
+        let imageURL = detailResponse.sprites.frontDefault
         
         let imagePromise: Promise<Data>
         if let urlString = imageURL, let url = URL(string: urlString) {
@@ -75,7 +74,8 @@ struct GetPokemonsUseCase {
             hp: hp,
             defense: defense,
             attack: attack,
-            speed: speed
+            speed: speed,
+            hdImageUrl: try? detailResponse.sprites.other?.officialArtwork?.frontDefault?.asURL()
         )
     }
     

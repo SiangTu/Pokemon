@@ -12,22 +12,25 @@ struct AllPokemonView: View {
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        NavigationView {
+        PokemonNavigationView {
             ZStack {
                 Color(red: 0.949, green: 0.949, blue: 0.969)
                     .ignoresSafeArea()
                 
                 ScrollView {
                     LazyVStack(spacing: 12) {
-                        ForEach(Array(viewModel.pokemons.enumerated()), id: \.element.number) { index, pokemon in
+                    ForEach(Array(viewModel.pokemons.enumerated()), id: \.element.number) { index, pokemon in
+                        NavigationLink(destination: PokemonDetailView(pokemon: pokemon).navigationBarHidden(true)) {
                             PokemonRowView(pokemon: pokemon)
-                                .onAppear {
-                                    // 當倒數第 3 個 item 出現時，開始載入更多
-                                    if index >= viewModel.pokemons.count - 3 {
-                                        viewModel.loadMorePokemons()
-                                    }
-                                }
                         }
+                        .buttonStyle(PlainButtonStyle())
+                        .onAppear {
+                            // 當倒數第 3 個 item 出現時，開始載入更多
+                            if index >= viewModel.pokemons.count - 3 {
+                                viewModel.loadMorePokemons()
+                            }
+                        }
+                    }
                         
                         // Loading indicator
                         if viewModel.isLoading {
@@ -53,30 +56,8 @@ struct AllPokemonView: View {
                     viewModel.refresh()
                 }
             }
-            .navigationTitle("All Pokémon")
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarBackButtonHidden(true)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: 36, height: 36)
-                            
-                            Image(systemName: "chevron.left")
-                                .foregroundColor(.black)
-                                .font(.system(size: 14, weight: .semibold))
-                        }
-                    }
-                }
-            }
-            .toolbarBackground(.white.opacity(0.1), for: .navigationBar)
-            .toolbarBackgroundVisibility(.visible, for: .navigationBar)
+            .pokemonNavigationTitle("All Pokémon", color: .black)
             .onAppear {
-                setNavigationBar()
                 if viewModel.pokemons.isEmpty {
                     viewModel.loadMorePokemons()
                 }
@@ -93,6 +74,7 @@ struct AllPokemonView: View {
                     Text(error)
                 }
             }
+            
         }
     }
 }

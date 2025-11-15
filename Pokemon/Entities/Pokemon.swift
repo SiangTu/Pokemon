@@ -21,4 +21,12 @@ struct Pokemon {
     let defense: Int
     let attack: Int
     let speed: Int
+    let hdImageUrl: URL?
+    
+    func getHdImage() -> Promise<Data> {
+        guard let hdImageUrl else {
+            return image
+        }
+        return NetworkService.loadImage(from: hdImageUrl)
+    }
 }

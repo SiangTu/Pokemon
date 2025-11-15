@@ -340,6 +340,13 @@ class ViewController: UIViewController {
         let hostingController = UIHostingController(rootView: allPokemonView)
         navigationController?.pushViewController(hostingController, animated: true)
     }
+    
+    private func navigateToDetail(pokemon: Pokemon) {
+        let detailView = PokemonDetailView(pokemon: pokemon)
+            .navigationBarHidden(true)
+        let hostingController = UIHostingController(rootView: detailView)
+        navigationController?.pushViewController(hostingController, animated: true)
+    }
 }
 
 // MARK: - UICollectionViewDataSource & Delegate
@@ -358,6 +365,9 @@ extension ViewController: UICollectionViewDataSource, UICollectionViewDelegateFl
         if collectionView == featuredCollectionView {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "PokemonStackCell", for: indexPath) as! PokemonStackCell
             cell.configure(with: pokemonColumns[indexPath.item])
+            cell.onPokemonTap = { [weak self] pokemon in
+                self?.navigateToDetail(pokemon: pokemon)
+            }
             return cell
         } else if collectionView == typesCollectionView {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "TypeButtonCell", for: indexPath) as! TypeButtonCell
