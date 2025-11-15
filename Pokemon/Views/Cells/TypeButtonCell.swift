@@ -30,34 +30,10 @@ class TypeButtonCell: UICollectionViewCell {
         }
     }
     
-    func configure(with type: TypeListResponse.TypeResult) {
-        button.setTitle(type.name.capitalized, for: .normal)
-        button.backgroundColor = typeColor(for: type.name)
+    func configure(with type: PokemonType) {
+        button.setTitle(type.rawValue.capitalized, for: .normal)
+        button.backgroundColor = type.color
         button.setTitleColor(.white, for: .normal)
-    }
-    
-    private func typeColor(for typeName: String) -> UIColor {
-        switch typeName.lowercased() {
-        case "normal": return .systemGray
-        case "fighting": return .systemRed
-        case "flying": return .systemBlue
-        case "poison": return .purple
-        case "ground": return .brown
-        case "rock": return .systemGray
-        case "bug": return .systemGreen
-        case "ghost": return .purple
-        case "steel": return .systemGray2
-        case "fire": return .systemRed
-        case "water": return .systemBlue
-        case "grass": return .systemGreen
-        case "electric": return .systemYellow
-        case "psychic": return .systemPink
-        case "ice": return .cyan
-        case "dragon": return .systemPurple
-        case "dark": return .black
-        case "fairy": return .systemPink
-        default: return .systemGray3
-        }
     }
 }
 

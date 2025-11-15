@@ -36,7 +36,7 @@ class PokemonStackCell: UICollectionViewCell {
         }
     }
     
-    func configure(with pokemons: [PokemonListResponse.PokemonResult]) {
+    func configure(with pokemons: [Pokemon]) {
         // Clear existing views
         stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         

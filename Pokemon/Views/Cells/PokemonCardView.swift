@@ -104,54 +104,32 @@ class PokemonCardView: UIView {
         }
     }
     
-    func configure(with pokemon: PokemonListResponse.PokemonResult) {
-        if let id = extractID(from: pokemon.url) {
-            numberLabel.text = "#\(id)"
-            nameLabel.text = pokemon.name.uppercased()
-            
-            // Use mock types based on Pokemon ID
-            let mockTypes = getMockTypes(for: id)
-            setupTypes(types: mockTypes)
-        }
-    }
-    
-    private func getMockTypes(for id: Int) -> [PokemonDetailResponse.PokemonType] {
-        // Mock type data for first 9 Pokemon
-        let mockTypeData: [Int: [String]] = [
-            1: ["grass", "poison"],  // Bulbasaur
-            2: ["grass", "poison"],  // Ivysaur
-            3: ["grass", "poison"],  // Venusaur
-            4: ["fire"],              // Charmander
-            5: ["fire"],              // Charmeleon
-            6: ["fire", "flying"],    // Charizard
-            7: ["water"],             // Squirtle
-            8: ["water"],             // Wartortle
-            9: ["water"]              // Blastoise
-        ]
+    func configure(with pokemon: Pokemon) {
+        numberLabel.text = "#\(pokemon.number)"
+        nameLabel.text = pokemon.name.uppercased()
+        setupTypes(types: pokemon.types)
         
-        let typeNames = mockTypeData[id] ?? ["normal"]
-        return typeNames.enumerated().map { index, typeName in
-            let namedResource = PokemonDetailResponse.NamedAPIResource(
-                name: typeName,
-                url: "https://pokeapi.co/api/v2/type/\(index + 1)/"
-            )
-            return PokemonDetailResponse.PokemonType(
-                slot: index + 1,
-                type: namedResource
-            )
-        }
+        // Load image from Promise
+        pokemon.image
+            .done { [weak self] imageData in
+                guard let self = self, let image = UIImage(data: imageData) else { return }
+                self.imageView.image = image
+            }
+            .catch { error in
+                print("Failed to load image: \(error.localizedDescription)")
+            }
     }
     
-    private func setupTypes(types: [PokemonDetailResponse.PokemonType]) {
+    private func setupTypes(types: [PokemonType]) {
         typesStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         
         for type in types.prefix(2) {
             let typeLabel = UILabel()
-            typeLabel.text = type.type.name.capitalized
+            typeLabel.text = type.rawValue.capitalized
             typeLabel.font = .systemFont(ofSize: 10, weight: .medium)
             typeLabel.textColor = .white
             typeLabel.textAlignment = .center
-            typeLabel.backgroundColor = typeColor(for: type.type.name)
+            typeLabel.backgroundColor = type.color
             typeLabel.layer.cornerRadius = 8
             typeLabel.clipsToBounds = true
             
@@ -161,24 +139,6 @@ class PokemonCardView: UIView {
                 make.height.equalTo(20)
             }
         }
-    }
-    
-    private func typeColor(for typeName: String) -> UIColor {
-        switch typeName.lowercased() {
-        case "grass": return .systemGreen
-        case "poison": return .purple
-        case "fire": return .systemRed
-        case "water": return .systemBlue
-        case "normal": return .systemGray
-        case "fighting": return .systemRed
-        case "flying": return .systemBlue
-        default: return .systemGray2
-        }
-    }
-    
-    private func extractID(from url: String) -> Int? {
-        let components = url.components(separatedBy: "/")
-        return components.dropLast().last.flatMap { Int($0) }
     }
 }
 

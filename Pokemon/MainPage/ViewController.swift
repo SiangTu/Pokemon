@@ -32,7 +32,7 @@ class ViewController: UIViewController {
         return cv
     }()
     
-    private var pokemonColumns: [[PokemonListResponse.PokemonResult]] = []
+    private var pokemonColumns: [[Pokemon]] = []
     
     // Section 2: Types
     private let typesSectionView = UIView()
@@ -59,9 +59,10 @@ class ViewController: UIViewController {
     private let regionsSeeMoreLabel = UILabel()
     private let regionsStackView = UIStackView()
     
-    private var pokemonList: [PokemonListResponse.PokemonResult] = []
-    private var typeList: [TypeListResponse.TypeResult] = []
-    private var regionList: [RegionListResponse.RegionResult] = []
+    private let viewModel = MainViewModel()
+    private var pokemonList: [Pokemon] = []
+    private var typeList: [PokemonType] = []
+    private var regionList: [Region] = []
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -235,58 +236,45 @@ class ViewController: UIViewController {
     }
     
     private func loadData() {
-        // Use mock data instead of API calls
-        pokemonList = [
-            PokemonListResponse.PokemonResult(name: "bulbasaur", url: "https://pokeapi.co/api/v2/pokemon/1/"),
-            PokemonListResponse.PokemonResult(name: "ivysaur", url: "https://pokeapi.co/api/v2/pokemon/2/"),
-            PokemonListResponse.PokemonResult(name: "venusaur", url: "https://pokeapi.co/api/v2/pokemon/3/"),
-            PokemonListResponse.PokemonResult(name: "charmander", url: "https://pokeapi.co/api/v2/pokemon/4/"),
-            PokemonListResponse.PokemonResult(name: "charmeleon", url: "https://pokeapi.co/api/v2/pokemon/5/"),
-            PokemonListResponse.PokemonResult(name: "charizard", url: "https://pokeapi.co/api/v2/pokemon/6/"),
-            PokemonListResponse.PokemonResult(name: "squirtle", url: "https://pokeapi.co/api/v2/pokemon/7/"),
-            PokemonListResponse.PokemonResult(name: "wartortle", url: "https://pokeapi.co/api/v2/pokemon/8/"),
-            PokemonListResponse.PokemonResult(name: "blastoise", url: "https://pokeapi.co/api/v2/pokemon/9/")
-        ]
-        // Group Pokemon into columns of 3
-        pokemonColumns = pokemonList.chunked(into: 3)
-        featuredCollectionView.reloadData()
+        // Load Pokemons
+        viewModel.getPokemons()
+            .done { [weak self] pokemons in
+                guard let self = self else { return }
+                self.pokemonList = pokemons
+                // Group Pokemon into columns of 3
+                self.pokemonColumns = pokemons.chunked(into: 3)
+                self.featuredCollectionView.reloadData()
+            }
+            .catch { error in
+                print("Failed to load Pokemons: \(error.localizedDescription)")
+            }
         
-        typeList = [
-            TypeListResponse.TypeResult(name: "normal", url: "https://pokeapi.co/api/v2/type/1/"),
-            TypeListResponse.TypeResult(name: "fighting", url: "https://pokeapi.co/api/v2/type/2/"),
-            TypeListResponse.TypeResult(name: "flying", url: "https://pokeapi.co/api/v2/type/3/"),
-            TypeListResponse.TypeResult(name: "poison", url: "https://pokeapi.co/api/v2/type/4/"),
-            TypeListResponse.TypeResult(name: "ground", url: "https://pokeapi.co/api/v2/type/5/"),
-            TypeListResponse.TypeResult(name: "rock", url: "https://pokeapi.co/api/v2/type/6/"),
-            TypeListResponse.TypeResult(name: "bug", url: "https://pokeapi.co/api/v2/type/7/"),
-            TypeListResponse.TypeResult(name: "ghost", url: "https://pokeapi.co/api/v2/type/8/"),
-            TypeListResponse.TypeResult(name: "steel", url: "https://pokeapi.co/api/v2/type/9/"),
-            TypeListResponse.TypeResult(name: "fire", url: "https://pokeapi.co/api/v2/type/10/")
-        ]
-        typesCollectionView.reloadData()
+        // Load Types
+        viewModel.getTypes()
+            .done { [weak self] types in
+                guard let self = self else { return }
+                self.typeList = types
+                self.typesCollectionView.reloadData()
+            }
+            .catch { error in
+                print("Failed to load Types: \(error.localizedDescription)")
+            }
         
-        regionList = [
-            RegionListResponse.RegionResult(name: "kanto", url: "https://pokeapi.co/api/v2/region/1/"),
-            RegionListResponse.RegionResult(name: "johto", url: "https://pokeapi.co/api/v2/region/2/"),
-            RegionListResponse.RegionResult(name: "hoenn", url: "https://pokeapi.co/api/v2/region/3/"),
-            RegionListResponse.RegionResult(name: "sinnoh", url: "https://pokeapi.co/api/v2/region/4/"),
-            RegionListResponse.RegionResult(name: "hodenn", url: "https://pokeapi.co/api/v2/region/3/"),
-            RegionListResponse.RegionResult(name: "siannoh", url: "https://pokeapi.co/api/v2/region/4/")
-        ]
-        setupRegionsGrid()
+        // Load Regions
+        viewModel.getRegions()
+            .done { [weak self] regions in
+                guard let self = self else { return }
+                self.regionList = regions
+                self.setupRegionsGrid()
+            }
+            .catch { error in
+                print("Failed to load Regions: \(error.localizedDescription)")
+            }
     }
     
     private func setupRegionsGrid() {
         // Clear existing views
         regionsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        
-        // Mock location counts for regions
-        let regionLocationCounts: [String: Int] = [
-            "kanto": 93,
-            "johto": 66,
-            "hoenn": 107,
-            "sinnoh": 127,
-        ]
         
         // Create rows of 2
         let chunkedRegions = Array(regionList.prefix(6)).chunked(into: 2)
@@ -298,8 +286,7 @@ class ViewController: UIViewController {
             rowStack.distribution = .fillEqually
             
             for region in row {
-                let locationCount = regionLocationCounts[region.name] ?? 0
-                let card = createRegionCard(region: region, locationCount: locationCount)
+                let card = createRegionCard(region: region)
                 rowStack.addArrangedSubview(card)
             }
             
@@ -310,7 +297,7 @@ class ViewController: UIViewController {
         }
     }
     
-    private func createRegionCard(region: RegionListResponse.RegionResult, locationCount: Int) -> UIView {
+    private func createRegionCard(region: Region) -> UIView {
         let card = UIView()
         card.backgroundColor = .white
         card.layer.cornerRadius = 12
@@ -329,7 +316,7 @@ class ViewController: UIViewController {
         }
         
         let locationLabel = UILabel()
-        locationLabel.text = "\(locationCount) Locations"
+        locationLabel.text = "\(region.numOfLoaction) Locations"
         locationLabel.font = .systemFont(ofSize: 14)
         locationLabel.textColor = .gray
         card.addSubview(locationLabel)
@@ -341,11 +328,6 @@ class ViewController: UIViewController {
         }
         
         return card
-    }
-    
-    private func extractID(from url: String) -> Int? {
-        let components = url.components(separatedBy: "/")
-        return components.dropLast().last.flatMap { Int($0) }
     }
 }
 
