@@ -16,7 +16,6 @@ class Pokemon {
     let types: [PokemonType]
     let image: Promise<Data>
     
-    // TODO: 這邊也是別依賴Service
     var isCollected: Bool {
         get {
             return collectionService.isCollected(pokemonNumber: number)
@@ -25,6 +24,7 @@ class Pokemon {
             collectionService.toggleCollection(pokemonNumber: number)
         }
     }
+    
     let weight: Int
     let height: Int
     let hp: Int
