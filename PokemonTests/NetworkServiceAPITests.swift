@@ -10,13 +10,17 @@ import PromiseKit
 @testable import Pokemon
 
 final class NetworkServiceAPITests: XCTestCase {
-        
+            
+    var networkService: NetworkService!
+    
     override func setUp() {
         super.setUp()
+        self.networkService = NetworkService()
     }
     
     override func tearDown() {
         super.tearDown()
+        self.networkService = nil
     }
     
     // MARK: - Pokemon List API Tests
@@ -28,7 +32,7 @@ final class NetworkServiceAPITests: XCTestCase {
         let offset = 1
         
         // When
-        NetworkService.getPokemonList(limit: limit, offset: offset)
+        networkService.getPokemonList(limit: limit, offset: offset)
             .done { response in
                 // Then
                 XCTAssertGreaterThan(response.count, 0, "Pokemon count should be greater than 0")
@@ -57,7 +61,7 @@ final class NetworkServiceAPITests: XCTestCase {
         let offset = 0
         
         // When
-        NetworkService.getPokemonList(limit: limit, offset: offset)
+        networkService.getPokemonList(limit: limit, offset: offset)
             .done { response in
                 // Then
                 XCTAssertNotNil(response.count, "Count should not be nil")
@@ -88,7 +92,7 @@ final class NetworkServiceAPITests: XCTestCase {
         let pokemonId = 1
         
         // When
-        NetworkService.getPokemonDetail(id: pokemonId)
+        networkService.getPokemonDetail(id: pokemonId)
             .done { response in
                 // Then
                 XCTAssertEqual(response.id, pokemonId, "Pokemon ID should match requested ID")
@@ -124,7 +128,7 @@ final class NetworkServiceAPITests: XCTestCase {
         let pokemonId = 1
         
         // When
-        NetworkService.getPokemonDetail(id: pokemonId)
+        networkService.getPokemonDetail(id: pokemonId)
             .done { response in
                 // Then
                 // Verify basic properties
@@ -184,7 +188,7 @@ final class NetworkServiceAPITests: XCTestCase {
             let expectation = expectation(description: "Pokemon \(pokemonId) request")
             expectations.append(expectation)
             
-            NetworkService.getPokemonDetail(id: pokemonId)
+            networkService.getPokemonDetail(id: pokemonId)
                 .done { response in
                     XCTAssertEqual(response.id, pokemonId, "Pokemon ID should match requested ID")
                     XCTAssertFalse(response.name.isEmpty, "Pokemon name should not be empty")
@@ -205,7 +209,7 @@ final class NetworkServiceAPITests: XCTestCase {
         let invalidId = 99999
         
         // When
-        NetworkService.getPokemonDetail(id: invalidId)
+        networkService.getPokemonDetail(id: invalidId)
             .done { _ in
                 // If the API returns a response for invalid ID, we might need to adjust this test
                 // For now, we'll just verify it doesn't crash
@@ -227,7 +231,7 @@ final class NetworkServiceAPITests: XCTestCase {
         let expectation = expectation(description: "Type List API Request")
         
         // When
-        NetworkService.getTypeList()
+        networkService.getTypeList()
             .done { response in
                 // Then
                 XCTAssertGreaterThan(response.count, 0, "Type count should be greater than 0")
@@ -258,7 +262,7 @@ final class NetworkServiceAPITests: XCTestCase {
         let expectation = expectation(description: "Type List Response Structure")
         
         // When
-        NetworkService.getTypeList()
+        networkService.getTypeList()
             .done { response in
                 // Then
                 XCTAssertNotNil(response.count, "Count should not be nil")
@@ -291,7 +295,7 @@ final class NetworkServiceAPITests: XCTestCase {
         let offset = 0
         
         // When
-        NetworkService.getTypeList(limit: limit, offset: offset)
+        networkService.getTypeList(limit: limit, offset: offset)
             .done { response in
                 // Then
                 XCTAssertGreaterThan(response.count, 0, "Type count should be greater than 0")
@@ -317,7 +321,7 @@ final class NetworkServiceAPITests: XCTestCase {
         let expectation = expectation(description: "Region List API Request")
         
         // When
-        NetworkService.getRegionList()
+        networkService.getRegionList()
             .done { response in
                 // Then
                 XCTAssertGreaterThan(response.count, 0, "Region count should be greater than 0")
@@ -348,7 +352,7 @@ final class NetworkServiceAPITests: XCTestCase {
         let expectation = expectation(description: "Region List Response Structure")
         
         // When
-        NetworkService.getRegionList()
+        networkService.getRegionList()
             .done { response in
                 // Then
                 XCTAssertNotNil(response.count, "Count should not be nil")
@@ -381,7 +385,7 @@ final class NetworkServiceAPITests: XCTestCase {
         let offset = 0
         
         // When
-        NetworkService.getRegionList(limit: limit, offset: offset)
+        networkService.getRegionList(limit: limit, offset: offset)
             .done { response in
                 // Then
                 XCTAssertGreaterThan(response.count, 0, "Region count should be greater than 0")
@@ -408,7 +412,7 @@ final class NetworkServiceAPITests: XCTestCase {
         let regionId = 1
         
         // When
-        NetworkService.getRegionDetail(id: regionId)
+        networkService.getRegionDetail(id: regionId)
             .done { response in
                 // Then
                 XCTAssertEqual(response.id, regionId, "Region ID should match requested ID")
@@ -437,7 +441,7 @@ final class NetworkServiceAPITests: XCTestCase {
         let regionId = 1
         
         // When
-        NetworkService.getRegionDetail(id: regionId)
+        networkService.getRegionDetail(id: regionId)
             .done { response in
                 // Then
                 // Verify basic properties
@@ -491,7 +495,7 @@ final class NetworkServiceAPITests: XCTestCase {
             let expectation = expectation(description: "Region \(regionId) request")
             expectations.append(expectation)
             
-            NetworkService.getRegionDetail(id: regionId)
+            networkService.getRegionDetail(id: regionId)
                 .done { response in
                     XCTAssertEqual(response.id, regionId, "Region ID should match requested ID")
                     XCTAssertFalse(response.name.isEmpty, "Region name should not be empty")

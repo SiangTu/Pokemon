@@ -11,6 +11,8 @@
 		148488E52EC880A60068B8AE /* Moya in Frameworks */ = {isa = PBXBuildFile; productRef = 148488E42EC880A60068B8AE /* Moya */; };
 		148488EB2EC884290068B8AE /* PromiseKit in Frameworks */ = {isa = PBXBuildFile; productRef = 148488EA2EC884290068B8AE /* PromiseKit */; };
 		148488F22EC88F680068B8AE /* SnapKit in Frameworks */ = {isa = PBXBuildFile; productRef = 148488F12EC88F680068B8AE /* SnapKit */; };
+		1484B55E2EC987980068B8AE /* Factory in Frameworks */ = {isa = PBXBuildFile; productRef = 1484B55D2EC987980068B8AE /* Factory */; };
+		1484B56D2EC991320068B8AE /* Factory in Frameworks */ = {isa = PBXBuildFile; productRef = 1484B56C2EC991320068B8AE /* Factory */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -75,6 +77,7 @@
 				148488F22EC88F680068B8AE /* SnapKit in Frameworks */,
 				148488E52EC880A60068B8AE /* Moya in Frameworks */,
 				148488B82EC87CF00068B8AE /* PromiseKit in Frameworks */,
+				1484B55E2EC987980068B8AE /* Factory in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -83,6 +86,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				148488EB2EC884290068B8AE /* PromiseKit in Frameworks */,
+				1484B56D2EC991320068B8AE /* Factory in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -147,6 +151,7 @@
 				148488B72EC87CF00068B8AE /* PromiseKit */,
 				148488E42EC880A60068B8AE /* Moya */,
 				148488F12EC88F680068B8AE /* SnapKit */,
+				1484B55D2EC987980068B8AE /* Factory */,
 			);
 			productName = Pokemon;
 			productReference = 148488772EC87B8F0068B8AE /* Pokemon.app */;
@@ -171,6 +176,7 @@
 			name = PokemonTests;
 			packageProductDependencies = (
 				148488EA2EC884290068B8AE /* PromiseKit */,
+				1484B56C2EC991320068B8AE /* Factory */,
 			);
 			productName = PokemonTests;
 			productReference = 1484888D2EC87B900068B8AE /* PokemonTests.xctest */;
@@ -235,6 +241,7 @@
 				148488AB2EC87BD20068B8AE /* XCRemoteSwiftPackageReference "Moya" */,
 				148488B62EC87CF00068B8AE /* XCRemoteSwiftPackageReference "PromiseKit" */,
 				148488F02EC88F680068B8AE /* XCRemoteSwiftPackageReference "SnapKit" */,
+				1484B55C2EC987980068B8AE /* XCRemoteSwiftPackageReference "Factory" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 148488782EC87B8F0068B8AE /* Products */;
@@ -625,6 +632,14 @@
 				minimumVersion = 5.7.1;
 			};
 		};
+		1484B55C2EC987980068B8AE /* XCRemoteSwiftPackageReference "Factory" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/hmlongco/Factory";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.3;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -647,6 +662,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 148488F02EC88F680068B8AE /* XCRemoteSwiftPackageReference "SnapKit" */;
 			productName = SnapKit;
+		};
+		1484B55D2EC987980068B8AE /* Factory */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1484B55C2EC987980068B8AE /* XCRemoteSwiftPackageReference "Factory" */;
+			productName = Factory;
+		};
+		1484B56C2EC991320068B8AE /* Factory */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1484B55C2EC987980068B8AE /* XCRemoteSwiftPackageReference "Factory" */;
+			productName = Factory;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

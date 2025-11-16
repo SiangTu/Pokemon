@@ -6,13 +6,16 @@
 //
 
 import PromiseKit
+import Factory
 import UIKit
 
 struct GetPokemonsUseCase {
     
+    @Injected(\.pokemonInfoService) private var pokemonInfoService: PokemonInfoService
+    
     func execute(limit: Int, offset: Int? = nil) -> Promise<[Pokemon]> {
         // 1. 先取得 Pokemon 列表
-        return NetworkService.getPokemonList(limit: limit, offset: offset)
+        return pokemonInfoService.getPokemonList(limit: limit, offset: offset)
             .then { listResponse -> Promise<[Pokemon]> in
                 // 2. 從列表中提取每個 Pokemon 的 ID
                 let pokemonPromises = listResponse.results.compactMap { pokemonResult -> Promise<Pokemon>? in
@@ -21,7 +24,7 @@ struct GetPokemonsUseCase {
                     }
                     
                     // 3. 對每個 ID 調用 detail API，然後轉換成 Pokemon 物件
-                    return NetworkService.getPokemonDetail(id: id)
+                    return pokemonInfoService.getPokemonDetail(id: id)
                         .map { detailResponse in
                             // 4. 轉換成 Pokemon 物件（不需要等待圖片載入）
                             return self.convertToPokemon(detailResponse: detailResponse)
@@ -58,7 +61,7 @@ struct GetPokemonsUseCase {
         let imagePromise: Promise<Data>
         if let urlString = imageURL, let url = URL(string: urlString) {
             // 使用 URLSession 載入圖片
-            imagePromise = NetworkService.loadImage(from: url)
+            imagePromise = pokemonInfoService.loadImage(from: url)
         } else {
             imagePromise = .init(error: CommonError.missingRequiredValue)
         }

@@ -8,6 +8,7 @@
 import UIKit
 
 import PromiseKit
+import Factory
 
 class Pokemon {
     let number: Int
@@ -18,10 +19,10 @@ class Pokemon {
     // TODO: 這邊也是別依賴Service
     var isCollected: Bool {
         get {
-            return PokemonCollectionService.shared.isCollected(pokemonNumber: number)
+            return collectionService.isCollected(pokemonNumber: number)
         }
         set {
-            PokemonCollectionService.shared.setCollected(newValue, pokemonNumber: number)
+            collectionService.toggleCollection(pokemonNumber: number)
         }
     }
     let weight: Int
@@ -31,6 +32,8 @@ class Pokemon {
     let attack: Int
     let speed: Int
     private let hdImageUrl: URL?
+    @Injected(\.pokemonInfoService) private var pokemonInfoService: PokemonInfoService
+    @Injected(\.collectionService) private var collectionService: CollectionService
     
     init(number: Int, name: String, types: [PokemonType], image: Promise<Data>, weight: Int, height: Int, hp: Int, defense: Int, attack: Int, speed: Int, hdImageUrl: URL?) {
         self.number = number
@@ -46,12 +49,11 @@ class Pokemon {
         self.hdImageUrl = hdImageUrl
     }
     
-    // TODO: 這裡依賴Service不好
     func getHdImage() -> Promise<Data> {
         guard let hdImageUrl else {
             return image
         }
-        return NetworkService.loadImage(from: hdImageUrl)
+        return pokemonInfoService.loadImage(from: hdImageUrl)
     }
     
     

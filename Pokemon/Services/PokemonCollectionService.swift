@@ -7,14 +7,11 @@
 
 import Foundation
 
-class PokemonCollectionService {
-    static let shared = PokemonCollectionService()
+class PokemonCollectionService: CollectionService {
     
     private let userDefaults = UserDefaults.standard
     private let collectedPokemonNumbersKey = "collectedPokemonNumbers"
-    
-    private init() {}
-    
+        
     // 檢查 Pokemon 是否已收藏
     func isCollected(pokemonNumber: Int) -> Bool {
         let collectedNumbers = getCollectedNumbers()

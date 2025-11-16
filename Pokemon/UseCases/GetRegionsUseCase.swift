@@ -5,11 +5,15 @@
 //  Created by Sean on 2025/11/15.
 //
 import PromiseKit
+import Factory
 
 struct GetRegionsUseCase {
+    
+    @Injected(\.pokemonInfoService) private var pokemonInfoService: PokemonInfoService
+    
     func execute(limit: Int? = nil, offset: Int? = nil) -> Promise<[Region]> {
         // 1. 先取得 Region 列表
-        return NetworkService.getRegionList(limit: limit, offset: offset)
+        return pokemonInfoService.getRegionList(limit: limit, offset: offset)
             .then { listResponse -> Promise<[Region]> in
                 // 2. 從列表中提取每個 Region 的 ID
                 let regionPromises = listResponse.results.compactMap { regionResult -> Promise<Region>? in
@@ -18,7 +22,7 @@ struct GetRegionsUseCase {
                     }
                     
                     // 3. 對每個 ID 調用 detail API，然後轉換成 Region 物件
-                    return NetworkService.getRegionDetail(id: id)
+                    return pokemonInfoService.getRegionDetail(id: id)
                         .map { detailResponse in
                             // 4. 轉換成 Region 物件
                             return self.convertToRegion(detailResponse: detailResponse)
