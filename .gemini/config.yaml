@@ -1,0 +1,18 @@
+# .gemini/config.yaml
+# 設定 Gemini Code Assist 的自動行為
+
+# 當 PR 建立時的自動動作
+pull_request:
+  opened:
+    summary: true      # 自動生成變更摘要（幫你寫好 PR 描述）
+    review: true       # 自動執行程式碼審查
+    labels: true       # 自動根據變更性質貼上標籤 (如: bug, feature)
+
+# 當你推送新的程式碼到現有 PR 時
+push:
+  review: true         # 自動針對新變更進行增量審查
+
+# 審查風格設定
+review_settings:
+  language: "zh-TW"    # 讓 Gemini 用繁體中文回覆你
+  severity_threshold: "medium" # 只有中等以上的建議才在 PR 留言，減少雜訊
