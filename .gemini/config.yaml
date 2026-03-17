@@ -15,4 +15,4 @@ push:
 # 審查風格設定
 review_settings:
   language: "zh-TW"    # 讓 Gemini 用繁體中文回覆你
-  severity_threshold: "medium" # 只有中等以上的建議才在 PR 留言，減少雜訊
+  severity_threshold: "low" # 只有中等以上的建議才在 PR 留言，減少雜訊
