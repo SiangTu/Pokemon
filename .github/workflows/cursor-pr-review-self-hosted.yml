@@ -252,7 +252,7 @@ jobs:
             echo "- REPOSITORY=${REPOSITORY}"
             echo "- PR_NUMBER=${PR_NUMBER}"
             echo ""
-            echo "請嚴格依據上方「Cursor PR Review」說明執行：先用 MCP 取得此 PR 的 diff，審查後用 MCP 將完整 review 以 **一則 PR 留言** 發表。"
+            echo "請嚴格依據上方說明：**pull_request_review_write**（create 無 event → pending；submit_pending + APPROVE/REQUEST_CHANGES）、**add_comment_to_pending_review**（suggestion）；🔴/🟠 → REQUEST_CHANGES。"
           } >> "${PROMPT_OUT}"
 
           # 建議順序：--model（若設）→ -p 與 flags → 提示詞為最後一個參數。

@@ -20,7 +20,7 @@
 1. 檢查 `curl` / `python3` / Docker；MCP 映像僅在本地沒有時才 `docker pull`。
 2. 動態寫入 `.cursor/mcp.json`（含本次 `GITHUB_TOKEN`），**請勿**把此檔提交進 Git。
 3. **每次執行**會合併 **`~/.cursor/cli-config.json`**（依 `.github/cursor-runner-cli-config.min.json`），換新 runner 也會自動帶上 MCP / `gh` 權限；並移除會觸發 schema 錯誤的專案 `.cursor/cli.json`。
-4. Cursor Agent 透過 **GitHub MCP** 讀取 PR diff，審查後在 PR 留言。
+4. Cursor Agent 使用 **`pull_request_review_write`**（`create` / `submit_pending`）、**`add_comment_to_pending_review`**（含 **suggestion**）、**`pull_request_read`**；🔴/🟠 → **REQUEST_CHANGES**，否則 **APPROVE**。
 
 ## 疑難排解
 
