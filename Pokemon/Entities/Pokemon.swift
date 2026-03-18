@@ -21,7 +21,7 @@ class Pokemon {
             return collectionService.isCollected(pokemonNumber: number)
         }
         set {
-            collectionService.toggleCollection(pokemonNumber: number)
+            collectionService.setCollected(newValue, pokemonNumber: number)
         }
     }
     

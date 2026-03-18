@@ -8,4 +8,5 @@
 protocol CollectionService {
     func toggleCollection(pokemonNumber: Int)
     func isCollected(pokemonNumber: Int) -> Bool
+    func setCollected(_ isCollected: Bool, pokemonNumber: Int)
 }
