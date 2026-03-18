@@ -3,3 +3,6 @@
 
 # GitHub App credentials
 gha-creds-*.json
+
+# CI 動態寫入（含 token），勿提交
+.cursor/mcp.json

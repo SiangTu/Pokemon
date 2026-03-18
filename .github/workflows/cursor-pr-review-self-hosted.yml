@@ -1,0 +1,271 @@
+# Cursor CLI + GitHub MCP：在自架 runner 上對 PR 做 Code Review 並留言
+#
+# 事前準備（Repository）：
+#   Secrets: CURSOR_API_KEY（Cursor Dashboard 建立）
+#   可選 Variables: CURSOR_MODEL（例如留空則由 CLI 預設）
+#
+# 自架 Runner：
+#   - 建議 labels: self-hosted, Linux（或你自訂，並修改下方 runs-on）
+#   - 需已安裝或可安裝：Docker（給 GitHub MCP 用）、curl、python3
+#   - 第一次跑會自動安裝 Cursor CLI（若 PATH 中尚無 agent）
+
+name: 'Cursor PR Review (self-hosted)'
+
+on:
+  pull_request:
+    types:
+      - 'opened'
+      - 'synchronize'
+      - 'reopened'
+
+concurrency:
+  group: 'cursor-pr-review-${{ github.repository }}-${{ github.event.pull_request.number }}'
+  cancel-in-progress: true
+
+env:
+  # GitHub MCP 映像（與官方範例一致，可自行升級 tag）
+  GITHUB_MCP_IMAGE: 'ghcr.io/github/github-mcp-server:v0.27.0'
+
+jobs:
+  cursor-review:
+    name: 'Code review (Cursor + MCP)'
+    runs-on: 'self-hosted'
+    timeout-minutes: 30
+    permissions:
+      contents: 'read'
+      pull-requests: 'write'
+      issues: 'write'
+
+    steps:
+      - name: 'Checkout'
+        uses: 'actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8' # ratchet:actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      # -------------------------------------------------------------------------
+      # 環境檢查：curl / python3（workflow 腳本需要）
+      # -------------------------------------------------------------------------
+      - name: 'Check curl & python3'
+        shell: 'bash'
+        run: |
+          set -euo pipefail
+          command -v curl >/dev/null 2>&1 || { echo "::error::請安裝 curl"; exit 1; }
+          command -v python3 >/dev/null 2>&1 || { echo "::error::請安裝 python3"; exit 1; }
+          echo "curl / python3 OK"
+
+      # -------------------------------------------------------------------------
+      # 環境檢查：Docker（MCP 必須）
+      # -------------------------------------------------------------------------
+      - name: 'Check Docker'
+        id: 'docker_ok'
+        shell: 'bash'
+        run: |
+          set -euo pipefail
+          if ! command -v docker >/dev/null 2>&1; then
+            echo "::error::未偵測到 Docker。請在 runner 主機安裝 Docker 並啟動 daemon。"
+            exit 1
+          fi
+          if ! docker info >/dev/null 2>&1; then
+            echo "::error::Docker daemon 未運行或無權限，請確認 docker 可用。"
+            exit 1
+          fi
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+          echo "Docker OK: $(docker --version)"
+
+      - name: 'Pull GitHub MCP image (if missing)'
+        if: "steps.docker_ok.outputs.ok == 'true'"
+        shell: 'bash'
+        run: |
+          set -euo pipefail
+          if docker image inspect "${GITHUB_MCP_IMAGE}" >/dev/null 2>&1; then
+            echo "MCP 映像已存在，略過 pull。"
+          else
+            echo "正在拉取 MCP 映像 ${GITHUB_MCP_IMAGE} ..."
+            docker pull "${GITHUB_MCP_IMAGE}"
+          fi
+
+      # -------------------------------------------------------------------------
+      # 環境檢查 / 安裝：Cursor CLI（agent）
+      # -------------------------------------------------------------------------
+      - name: 'Ensure Cursor CLI (install only if missing)'
+        id: 'cursor_cli'
+        shell: 'bash'
+        run: |
+          set -euo pipefail
+          CURSOR_BIN_DIR="${HOME}/.cursor/bin"
+          export PATH="${CURSOR_BIN_DIR}:${PATH}"
+
+          if command -v agent >/dev/null 2>&1; then
+            echo "Cursor CLI 已安裝: $(command -v agent)"
+            agent about 2>/dev/null || true
+            echo "installed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "未偵測到 agent，開始安裝 Cursor CLI..."
+            curl https://cursor.com/install -fsS | bash
+            echo "${CURSOR_BIN_DIR}" >> "${GITHUB_PATH}"
+            export PATH="${CURSOR_BIN_DIR}:${PATH}"
+            if ! command -v agent >/dev/null 2>&1; then
+              echo "::error::安裝後仍找不到 agent，請確認安裝腳本是否支援此 OS。"
+              exit 1
+            fi
+            echo "installed=true" >> "$GITHUB_OUTPUT"
+            agent about 2>/dev/null || true
+          fi
+          echo "agent_path=$(command -v agent)" >> "$GITHUB_OUTPUT"
+
+      - name: 'Verify CURSOR_API_KEY'
+        shell: 'bash'
+        env:
+          CURSOR_API_KEY: '${{ secrets.CURSOR_API_KEY }}'
+        run: |
+          set -euo pipefail
+          if [ -z "${CURSOR_API_KEY}" ]; then
+            echo "::error::請在 Repository Secrets 設定 CURSOR_API_KEY"
+            exit 1
+          fi
+          echo "CURSOR_API_KEY 已設定（長度已隱藏）。"
+
+      # -------------------------------------------------------------------------
+      # 動態寫入 .cursor/mcp.json（含 GITHUB_TOKEN，不提交到 Git）
+      # -------------------------------------------------------------------------
+      - name: 'Write .cursor/mcp.json (GitHub MCP)'
+        shell: 'bash'
+        env:
+          GH_TOKEN_FOR_MCP: '${{ github.token }}'
+          GITHUB_MCP_IMAGE: '${{ env.GITHUB_MCP_IMAGE }}'
+        run: |
+          set -euo pipefail
+          mkdir -p .cursor
+          python3 << 'PY'
+          import json
+          import os
+
+          token = os.environ["GH_TOKEN_FOR_MCP"]
+          img = os.environ["GITHUB_MCP_IMAGE"]
+          cfg = {
+              "mcpServers": {
+                  "github": {
+                      "command": "docker",
+                      "args": [
+                          "run",
+                          "-i",
+                          "--rm",
+                          "-e",
+                          "GITHUB_PERSONAL_ACCESS_TOKEN",
+                          img,
+                      ],
+                      "env": {
+                          "GITHUB_PERSONAL_ACCESS_TOKEN": token,
+                      },
+                  }
+              }
+          }
+          with open(".cursor/mcp.json", "w", encoding="utf-8") as f:
+              json.dump(cfg, f, indent=2)
+          PY
+          echo "已寫入 .cursor/mcp.json（不含將檔案提交至 Git）。"
+
+      # 專案 .cursor/cli.json 不可含 permissions（CVE-2025-61592）；權限寫入 runner 的 ~/.cursor/cli-config.json
+      - name: 'Remove project .cursor/cli.json if present'
+        shell: 'bash'
+        run: |
+          set -euo pipefail
+          if [ -f ".cursor/cli.json" ]; then
+            rm -f ".cursor/cli.json"
+            echo "已移除專案 .cursor/cli.json（避免 schema validation failed）。"
+          fi
+
+      - name: 'Merge Cursor CLI permissions into ~/.cursor/cli-config.json'
+        shell: 'bash'
+        run: |
+          set -euo pipefail
+          python3 << 'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          ws = Path(os.environ["GITHUB_WORKSPACE"])
+          min_path = ws / ".github" / "cursor-runner-cli-config.min.json"
+          if not min_path.is_file():
+              raise SystemExit(f"missing {min_path}")
+
+          with open(min_path, encoding="utf-8") as f:
+              template = json.load(f)
+          need = template.get("permissions", {}).get("allow") or []
+
+          cursor_dir = Path.home() / ".cursor"
+          cursor_dir.mkdir(parents=True, exist_ok=True)
+          path = cursor_dir / "cli-config.json"
+
+          if path.exists():
+              try:
+                  cfg = json.loads(path.read_text(encoding="utf-8"))
+              except json.JSONDecodeError:
+                  cfg = {}
+          else:
+              cfg = {}
+
+          cfg["version"] = 1
+          cfg.setdefault("editor", {})
+          cfg["editor"].setdefault("vimMode", False)
+          perms = cfg.setdefault("permissions", {})
+          allow = list(perms.get("allow") or [])
+          s = set(allow)
+          for x in need:
+              if x not in s:
+                  allow.append(x)
+                  s.add(x)
+          perms["allow"] = allow
+          perms.setdefault("deny", perms.get("deny") or [])
+
+          path.write_text(json.dumps(cfg, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+          print("OK:", path)
+          PY
+
+      # -------------------------------------------------------------------------
+      # 執行 Agent：讀提示詞 + MCP 取 diff + 留言
+      # -------------------------------------------------------------------------
+      - name: 'Run Cursor Agent — review PR via MCP & post comment'
+        shell: 'bash'
+        env:
+          CURSOR_API_KEY: '${{ secrets.CURSOR_API_KEY }}'
+          GITHUB_TOKEN: '${{ github.token }}'
+          REPOSITORY: '${{ github.repository }}'
+          PR_NUMBER: '${{ github.event.pull_request.number }}'
+          CURSOR_MODEL: '${{ vars.CURSOR_MODEL }}'
+        run: |
+          set -euo pipefail
+          export PATH="${HOME}/.cursor/bin:${PATH}"
+
+          PROMPT_FILE="${GITHUB_WORKSPACE}/.github/prompts/cursor-pr-review.md"
+          if [ ! -f "${PROMPT_FILE}" ]; then
+            echo "::error::找不到 ${PROMPT_FILE}"
+            exit 1
+          fi
+
+          PROMPT_OUT="${RUNNER_TEMP}/cursor-pr-review-prompt.md"
+          cat "${PROMPT_FILE}" > "${PROMPT_OUT}"
+          {
+            echo ""
+            echo "## 本次執行上下文"
+            echo ""
+            echo "- REPOSITORY=${REPOSITORY}"
+            echo "- PR_NUMBER=${PR_NUMBER}"
+            echo ""
+            echo "請嚴格依據上方「Cursor PR Review」說明執行：先用 MCP 取得此 PR 的 diff，審查後用 MCP 將完整 review 以 **一則 PR 留言** 發表。"
+          } >> "${PROMPT_OUT}"
+
+          # 建議順序：--model（若設）→ -p 與 flags → 提示詞為最後一個參數。
+          PROMPT_TEXT="$(cat "${PROMPT_OUT}")"
+          # --force：headless 下搭配 ~/.cursor/cli-config.json 的 permissions.allow
+          if [ -n "${CURSOR_MODEL}" ]; then
+            agent --model "${CURSOR_MODEL}" -p --force --approve-mcps --trust \
+              --workspace "${GITHUB_WORKSPACE}" \
+              --output-format text \
+              "${PROMPT_TEXT}"
+          else
+            agent -p --force --approve-mcps --trust \
+              --workspace "${GITHUB_WORKSPACE}" \
+              --output-format text \
+              "${PROMPT_TEXT}"
+          fi
