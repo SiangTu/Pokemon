@@ -2,6 +2,13 @@
 
 對應 workflow：`.github/workflows/cursor-pr-review-self-hosted.yml`
 
+## 如何觸發
+
+| 方式 | 做法 |
+|------|------|
+| **PR 開啟／重新開啟** | 新建 PR 或 Reopen 時會自動跑。**往 PR 再 push 新 commit 不會觸發**（未使用 `synchronize`）。 |
+| **PR 留言** | 內文含 **`/cursor-review`**；僅 **OWNER / MEMBER / COLLABORATOR**。 |
+
 ## Repository 設定
 
 | 類型 | 名稱 | 說明 |

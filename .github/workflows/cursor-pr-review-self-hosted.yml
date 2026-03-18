@@ -1,13 +1,10 @@
-# Cursor CLI + GitHub MCP：在自架 runner 上對 PR 做 Code Review 並留言
+# Cursor CLI + GitHub MCP：在自架 runner 上對 PR 做 Code Review
 #
-# 事前準備（Repository）：
-#   Secrets: CURSOR_API_KEY（Cursor Dashboard 建立）
-#   可選 Variables: CURSOR_MODEL（例如留空則由 CLI 預設）
+# 觸發：
+#   - PR 開啟 / 重新開啟（不含 synchronize，push 不會自動跑）
+#   - PR 留言含「/cursor-review」（OWNER/MEMBER/COLLABORATOR）
 #
-# 自架 Runner：
-#   - 建議 labels: self-hosted, Linux（或你自訂，並修改下方 runs-on）
-#   - 需已安裝或可安裝：Docker（給 GitHub MCP 用）、curl、python3
-#   - 第一次跑會自動安裝 Cursor CLI（若 PATH 中尚無 agent）
+# 事前準備：Secrets CURSOR_API_KEY；可選 Variables CURSOR_MODEL
 
 name: 'Cursor PR Review (self-hosted)'
 
@@ -15,11 +12,13 @@ on:
   pull_request:
     types:
       - 'opened'
-      - 'synchronize'
       - 'reopened'
+  issue_comment:
+    types:
+      - 'created'
 
 concurrency:
-  group: 'cursor-pr-review-${{ github.repository }}-${{ github.event.pull_request.number }}'
+  group: 'cursor-pr-review-${{ github.repository }}-${{ github.event.pull_request.number || github.event.issue.number }}'
   cancel-in-progress: true
 
 env:
@@ -31,6 +30,13 @@ jobs:
     name: 'Code review (Cursor + MCP)'
     runs-on: 'self-hosted'
     timeout-minutes: 30
+    if: |-
+      github.event_name == 'pull_request' || (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        contains(github.event.comment.body, '/cursor-review') &&
+        contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+      )
     permissions:
       contents: 'read'
       pull-requests: 'write'
@@ -231,7 +237,7 @@ jobs:
           CURSOR_API_KEY: '${{ secrets.CURSOR_API_KEY }}'
           GITHUB_TOKEN: '${{ github.token }}'
           REPOSITORY: '${{ github.repository }}'
-          PR_NUMBER: '${{ github.event.pull_request.number }}'
+          PR_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
           CURSOR_MODEL: '${{ vars.CURSOR_MODEL }}'
         run: |
           set -euo pipefail
