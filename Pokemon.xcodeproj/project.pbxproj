@@ -668,11 +668,6 @@
 			package = 1484B55C2EC987980068B8AE /* XCRemoteSwiftPackageReference "Factory" */;
 			productName = Factory;
 		};
-		1484B56C2EC991320068B8AE /* Factory */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 1484B55C2EC987980068B8AE /* XCRemoteSwiftPackageReference "Factory" */;
-			productName = Factory;
-		};
 /* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 1484886F2EC87B8F0068B8AE /* Project object */;
