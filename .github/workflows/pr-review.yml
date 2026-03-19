@@ -1,0 +1,216 @@
+# Gemini CLI + GitHub MCP：在自架 runner 上對 PR 做 Code Review
+#
+# 觸發：
+#   - PR 開啟 / 重新開啟（不含 synchronize，push 不會自動跑）
+#   - PR 留言含「/gemini-review」（OWNER/MEMBER/COLLABORATOR）
+#
+# 事前準備：Secrets GEMINI_API_KEY；可選 Variables GEMINI_MODEL
+
+name: 'PR Review'
+
+on:
+  pull_request:
+    types:
+      - 'opened'
+      - 'reopened'
+  issue_comment:
+    types:
+      - 'created'
+
+concurrency:
+  group: 'pr-review-${{ github.repository }}-${{ github.event.pull_request.number || github.event.issue.number }}'
+  cancel-in-progress: true
+
+env:
+  # GitHub MCP 映像（與官方範例一致，可自行升級 tag）
+  GITHUB_MCP_IMAGE: 'ghcr.io/github/github-mcp-server:v0.27.0'
+
+jobs:
+  gemini-review:
+    name: 'Code review (Gemini + MCP)'
+    runs-on: 'self-hosted'
+    timeout-minutes: 30
+    if: |-
+      github.event_name == 'pull_request' || (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        contains(github.event.comment.body, '/gemini-review') &&
+        contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+      )
+    permissions:
+      contents: 'read'
+      pull-requests: 'write'
+      issues: 'write'
+
+    steps:
+      - name: 'Checkout'
+        uses: 'actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8' # ratchet:actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      # -------------------------------------------------------------------------
+      # 環境檢查：python3（workflow 腳本需要）
+      # -------------------------------------------------------------------------
+      - name: 'Check python3'
+        shell: 'bash'
+        run: |
+          set -euo pipefail
+          command -v python3 >/dev/null 2>&1 || { echo "::error::請安裝 python3"; exit 1; }
+          echo "python3 OK"
+
+      # -------------------------------------------------------------------------
+      # 環境檢查：Node.js >= 18（Gemini CLI 必須）
+      # -------------------------------------------------------------------------
+      - name: 'Check Node.js'
+        shell: 'bash'
+        run: |
+          set -euo pipefail
+          if ! command -v node >/dev/null 2>&1; then
+            echo "::error::未偵測到 Node.js。請在 runner 主機安裝 Node.js 18+。"
+            exit 1
+          fi
+          NODE_MAJOR=$(node -e 'console.log(process.versions.node.split(".")[0])')
+          if [ "${NODE_MAJOR}" -lt 18 ]; then
+            echo "::error::Node.js 版本過低（需 >= 18），目前為 $(node --version)"
+            exit 1
+          fi
+          echo "Node.js OK: $(node --version)"
+
+      # -------------------------------------------------------------------------
+      # 環境檢查：Docker（MCP 必須）
+      # -------------------------------------------------------------------------
+      - name: 'Check Docker'
+        id: 'docker_ok'
+        shell: 'bash'
+        run: |
+          set -euo pipefail
+          if ! command -v docker >/dev/null 2>&1; then
+            echo "::error::未偵測到 Docker。請在 runner 主機安裝 Docker 並啟動 daemon。"
+            exit 1
+          fi
+          if ! docker info >/dev/null 2>&1; then
+            echo "::error::Docker daemon 未運行或無權限，請確認 docker 可用。"
+            exit 1
+          fi
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+          echo "Docker OK: $(docker --version)"
+
+      - name: 'Pull GitHub MCP image (if missing)'
+        if: "steps.docker_ok.outputs.ok == 'true'"
+        shell: 'bash'
+        run: |
+          set -euo pipefail
+          if docker image inspect "${GITHUB_MCP_IMAGE}" >/dev/null 2>&1; then
+            echo "MCP 映像已存在，略過 pull。"
+          else
+            echo "正在拉取 MCP 映像 ${GITHUB_MCP_IMAGE} ..."
+            docker pull "${GITHUB_MCP_IMAGE}"
+          fi
+
+      # -------------------------------------------------------------------------
+      # 安裝 Gemini CLI（僅在尚未安裝時）
+      # -------------------------------------------------------------------------
+      - name: 'Ensure Gemini CLI (install only if missing)'
+        shell: 'bash'
+        run: |
+          set -euo pipefail
+          if command -v gemini >/dev/null 2>&1; then
+            echo "Gemini CLI 已安裝: $(command -v gemini)"
+          else
+            echo "未偵測到 gemini，開始安裝..."
+            npm install -g @google/gemini-cli
+            if ! command -v gemini >/dev/null 2>&1; then
+              echo "::error::安裝後仍找不到 gemini，請確認 npm global bin 目錄在 PATH 中。"
+              exit 1
+            fi
+          fi
+          echo "gemini CLI OK: $(gemini --version 2>/dev/null || echo 'installed')"
+
+      - name: 'Verify GEMINI_API_KEY'
+        shell: 'bash'
+        env:
+          GEMINI_API_KEY: '${{ secrets.GEMINI_API_KEY }}'
+        run: |
+          set -euo pipefail
+          if [ -z "${GEMINI_API_KEY}" ]; then
+            echo "::error::請在 Repository Secrets 設定 GEMINI_API_KEY"
+            exit 1
+          fi
+          echo "GEMINI_API_KEY 已設定（長度已隱藏）。"
+
+      # -------------------------------------------------------------------------
+      # 動態寫入 .gemini/settings.json（含 GITHUB_TOKEN，不提交到 Git）
+      # -------------------------------------------------------------------------
+      - name: 'Write .gemini/settings.json (GitHub MCP)'
+        shell: 'bash'
+        env:
+          GH_TOKEN_FOR_MCP: '${{ github.token }}'
+          GITHUB_MCP_IMAGE: '${{ env.GITHUB_MCP_IMAGE }}'
+        run: |
+          set -euo pipefail
+          mkdir -p .gemini
+          python3 << 'PY'
+          import json
+          import os
+
+          token = os.environ["GH_TOKEN_FOR_MCP"]
+          img = os.environ["GITHUB_MCP_IMAGE"]
+          cfg = {
+              "mcpServers": {
+                  "github": {
+                      "command": "docker",
+                      "args": [
+                          "run",
+                          "-i",
+                          "--rm",
+                          "-e",
+                          "GITHUB_PERSONAL_ACCESS_TOKEN",
+                          img,
+                      ],
+                      "env": {
+                          "GITHUB_PERSONAL_ACCESS_TOKEN": token,
+                      },
+                  }
+              }
+          }
+          with open(".gemini/settings.json", "w", encoding="utf-8") as f:
+              json.dump(cfg, f, indent=2)
+          PY
+          echo "已寫入 .gemini/settings.json（不含將檔案提交至 Git）。"
+
+      # -------------------------------------------------------------------------
+      # 執行 Gemini CLI：讀提示詞 + MCP 取 diff + 留言
+      # -------------------------------------------------------------------------
+      - name: 'Run Gemini CLI — review PR via MCP & post comment'
+        shell: 'bash'
+        env:
+          GEMINI_API_KEY: '${{ secrets.GEMINI_API_KEY }}'
+          GITHUB_TOKEN: '${{ github.token }}'
+          REPOSITORY: '${{ github.repository }}'
+          PR_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
+          GEMINI_MODEL: '${{ vars.GEMINI_MODEL }}'
+        run: |
+          set -euo pipefail
+
+          PROMPT_FILE="${GITHUB_WORKSPACE}/.github/prompts/pr-review-prompt.md"
+          if [ ! -f "${PROMPT_FILE}" ]; then
+            echo "::error::找不到 ${PROMPT_FILE}"
+            exit 1
+          fi
+
+          PROMPT_OUT="${RUNNER_TEMP}/pr-review-prompt.md"
+          cat "${PROMPT_FILE}" > "${PROMPT_OUT}"
+          {
+            echo ""
+            echo "## 本次執行上下文"
+            echo ""
+            echo "- REPOSITORY=${REPOSITORY}"
+            echo "- PR_NUMBER=${PR_NUMBER}"
+            echo ""
+            echo "請嚴格依據上方說明：**pull_request_review_write**（create 無 event → pending；submit_pending + APPROVE/REQUEST_CHANGES）、**add_comment_to_pending_review**（suggestion）；🔴/🟠 → REQUEST_CHANGES。"
+          } >> "${PROMPT_OUT}"
+
+          PROMPT_TEXT="$(cat "${PROMPT_OUT}")"
+          MODEL="${GEMINI_MODEL:-gemini-2.5-pro}"
+
+          gemini --model "${MODEL}" --yolo --prompt "${PROMPT_TEXT}"
