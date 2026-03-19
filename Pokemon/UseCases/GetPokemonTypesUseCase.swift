@@ -5,11 +5,15 @@
 //  Created by Sean on 2025/11/15.
 //
 import PromiseKit
+import Factory
 
 struct GetPokemonTypesUseCase {
+    
+    @Injected(\.pokemonInfoService) private var pokemonInfoService: PokemonInfoService
+    
     func execute(limit: Int? = nil, offset: Int? = nil) -> Promise<[PokemonType]> {
         // 1. 調用 API 取得類型列表
-        return NetworkService.getTypeList(limit: limit, offset: offset)
+        return pokemonInfoService.getTypeList(limit: limit, offset: offset)
             .map { typeListResponse -> [PokemonType] in
                 // 2. 將 TypeResult 轉換成 PokemonType enum
                 return typeListResponse.results.compactMap { typeResult -> PokemonType? in

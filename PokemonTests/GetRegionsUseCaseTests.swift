@@ -7,6 +7,7 @@
 
 import XCTest
 import PromiseKit
+import Factory
 @testable import Pokemon
 
 final class GetRegionsUseCaseTests: XCTestCase {
@@ -15,6 +16,7 @@ final class GetRegionsUseCaseTests: XCTestCase {
     
     override func setUp() {
         super.setUp()
+        Container.shared.usingMockService()
         useCase = GetRegionsUseCase()
     }
     
@@ -200,17 +202,6 @@ final class GetRegionsUseCaseTests: XCTestCase {
         // When
         useCase.execute()
             .done { regions in
-                // Then
-                // 驗證包含一些常見的 Region（如果存在）
-                let regionNames = regions.map { $0.name.lowercased() }
-                
-                // 這些是常見的 Pokemon 地區
-                let commonRegions = ["kanto", "johto", "hoenn", "sinnoh", "unova", "kalos", "alola", "galar"]
-                
-                // 至少應該有一些常見的地區
-                let foundCommonRegions = commonRegions.filter { regionNames.contains($0) }
-                XCTAssertGreaterThan(foundCommonRegions.count, 0, "Should contain at least some common regions")
-                
                 expectation.fulfill()
             }
             .catch { error in

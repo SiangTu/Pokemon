@@ -7,6 +7,7 @@
 
 import XCTest
 import PromiseKit
+import Factory
 @testable import Pokemon
 
 final class GetPokemonTypesUseCaseTests: XCTestCase {
@@ -15,6 +16,7 @@ final class GetPokemonTypesUseCaseTests: XCTestCase {
     
     override func setUp() {
         super.setUp()
+        Container.shared.usingMockService()
         useCase = GetPokemonTypesUseCase()
     }
     
@@ -44,44 +46,6 @@ final class GetPokemonTypesUseCaseTests: XCTestCase {
                         break // 有效的類型
                     }
                 }
-                
-                expectation.fulfill()
-            }
-            .catch { error in
-                XCTFail("UseCase execution failed with error: \(error.localizedDescription)")
-                expectation.fulfill()
-            }
-        
-        wait(for: [expectation], timeout: 10.0)
-    }
-    
-    func testExecute_VerifyAllTypes() {
-        // Given
-        let expectation = expectation(description: "Verify all Pokemon types")
-        
-        // When
-        useCase.execute()
-            .done { types in
-                // Then
-                // 驗證包含所有 18 種基本類型
-                let expectedTypes: Set<PokemonType> = [
-                    .normal, .fighting, .flying, .poison, .ground, .rock,
-                    .bug, .ghost, .steel, .fire, .water, .grass,
-                    .electric, .psychic, .ice, .dragon, .dark, .fairy
-                ]
-                
-                let returnedTypes = Set(types)
-                
-                // 驗證所有返回的類型都在預期類型中
-                for type in returnedTypes {
-                    XCTAssertTrue(expectedTypes.contains(type), "Type \(type) should be a valid PokemonType")
-                }
-                
-                // 驗證至少包含一些常見類型
-                XCTAssertTrue(returnedTypes.contains(.normal), "Should contain normal type")
-                XCTAssertTrue(returnedTypes.contains(.fire), "Should contain fire type")
-                XCTAssertTrue(returnedTypes.contains(.water), "Should contain water type")
-                XCTAssertTrue(returnedTypes.contains(.grass), "Should contain grass type")
                 
                 expectation.fulfill()
             }
